@@ -1,91 +1,155 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { colors } from '@/styles/commonStyles';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
-
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
+    <View style={styles.container}>
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
-        ]}
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <GlassView style={[
-          styles.profileHeader,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="person" size={80} color={theme.colors.primary} />
-          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
-          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>john.doe@example.com</Text>
-        </GlassView>
+        <View style={styles.header}>
+          <Text style={styles.emoji}>👨‍🌾</Text>
+          <Text style={styles.title}>Gardener Profile</Text>
+        </View>
 
-        <GlassView style={[
-          styles.section,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <View style={styles.infoRow}>
-            <IconSymbol ios_icon_name="phone.fill" android_material_icon_name="phone" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>🏆 Achievements</Text>
+          <View style={styles.achievementRow}>
+            <Text style={styles.achievementEmoji}>🌱</Text>
+            <View style={styles.achievementInfo}>
+              <Text style={styles.achievementName}>First Seed</Text>
+              <Text style={styles.achievementDesc}>Plant your first seed</Text>
+            </View>
           </View>
-          <View style={styles.infoRow}>
-            <IconSymbol ios_icon_name="location.fill" android_material_icon_name="location-on" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
+          <View style={styles.achievementRow}>
+            <Text style={styles.achievementEmoji}>💰</Text>
+            <View style={styles.achievementInfo}>
+              <Text style={styles.achievementName}>First Harvest</Text>
+              <Text style={styles.achievementDesc}>Harvest your first plant</Text>
+            </View>
           </View>
-        </GlassView>
+          <View style={styles.achievementRow}>
+            <Text style={styles.achievementEmoji}>🌻</Text>
+            <View style={styles.achievementInfo}>
+              <Text style={styles.achievementName}>Plant Collector</Text>
+              <Text style={styles.achievementDesc}>Unlock 5 different plants</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>📊 Statistics</Text>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Total Plants Grown:</Text>
+            <Text style={styles.statValue}>0</Text>
+          </View>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Total Coins Earned:</Text>
+            <Text style={styles.statValue}>0</Text>
+          </View>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Plants Unlocked:</Text>
+            <Text style={styles.statValue}>2/8</Text>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>ℹ️ About</Text>
+          <Text style={styles.aboutText}>
+            Welcome to Plant & Grow! Build your garden empire by planting seeds, caring for your plants, and harvesting them for coins. Unlock new plants and watch your garden flourish!
+          </Text>
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    // backgroundColor handled dynamically
-  },
   container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
+    paddingTop: 48,
+    paddingHorizontal: 16,
+    paddingBottom: 120,
   },
-  contentContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
-  },
-  profileHeader: {
+  header: {
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 32,
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: 24,
   },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    // color handled dynamically
+  emoji: {
+    fontSize: 64,
+    marginBottom: 12,
   },
-  email: {
-    fontSize: 16,
-    // color handled dynamically
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
   },
-  section: {
-    borderRadius: 12,
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
     padding: 20,
-    gap: 12,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: colors.secondary,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
   },
-  infoRow: {
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  achievementRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    marginBottom: 16,
   },
-  infoText: {
+  achievementEmoji: {
+    fontSize: 32,
+    marginRight: 16,
+  },
+  achievementInfo: {
+    flex: 1,
+  },
+  achievementName: {
     fontSize: 16,
-    // color handled dynamically
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  achievementDesc: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statLabel: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  aboutText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 22,
   },
 });
