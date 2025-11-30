@@ -20,6 +20,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_USER_KEY = '@garden_auth_user';
+const PROFILE_KEY = '@garden_user_profile';
+const GAME_STATE_KEY = '@garden_game_state';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -57,9 +59,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      console.log('Signing out user...');
+      
+      // Remove auth user data
       await AsyncStorage.removeItem(AUTH_USER_KEY);
+      
+      // Remove profile data
+      await AsyncStorage.removeItem(PROFILE_KEY);
+      
+      // Optionally remove game state (uncomment if you want to reset game progress on sign out)
+      // await AsyncStorage.removeItem(GAME_STATE_KEY);
+      
       setUser(null);
-      console.log('User signed out');
+      console.log('User signed out successfully');
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;

@@ -9,7 +9,7 @@ import { LeaderboardModal } from '@/components/LeaderboardModal';
 import { router } from 'expo-router';
 
 export default function ProfileScreen() {
-  const { currentProfile, getLeaderboard } = useProfile();
+  const { currentProfile, getLeaderboard, clearProfile } = useProfile();
   const { user, signOut } = useAuth();
   const { gameState } = useGameState();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -25,7 +25,17 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Starting sign out process...');
+              
+              // Sign out from auth context (this clears auth user and profile data)
               await signOut();
+              
+              // Clear the profile from the hook state
+              await clearProfile();
+              
+              console.log('Sign out completed, navigating to profile setup...');
+              
+              // Navigate to profile setup screen
               router.replace('/(tabs)/profile-setup');
             } catch (error) {
               console.error('Error signing out:', error);

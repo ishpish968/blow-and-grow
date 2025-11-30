@@ -1,16 +1,51 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 import { useGameState } from '@/hooks/useGameState';
 import { LeaderboardModal } from '@/components/LeaderboardModal';
 import { router } from 'expo-router';
 
 export default function ProfileScreen() {
-  const { currentProfile, getLeaderboard } = useProfile();
+  const { currentProfile, getLeaderboard, clearProfile } = useProfile();
+  const { user, signOut } = useAuth();
   const { gameState } = useGameState();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out? Your progress is saved.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('Starting sign out process...');
+              
+              // Sign out from auth context (this clears auth user and profile data)
+              await signOut();
+              
+              // Clear the profile from the hook state
+              await clearProfile();
+              
+              console.log('Sign out completed, navigating to profile setup...');
+              
+              // Navigate to profile setup screen
+              router.replace('/(tabs)/profile-setup');
+            } catch (error) {
+              console.error('Error signing out:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (!currentProfile) {
     return (
@@ -45,18 +80,43 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <Text style={styles.avatar}>{currentProfile.avatar}</Text>
           <Text style={styles.username}>{currentProfile.username}</Text>
+          {user && (
+            <View style={styles.authInfo}>
+              {user.email && (
+                <Text style={styles.email}>{user.email}</Text>
+              )}
+              <View style={styles.providerBadge}>
+                <Text style={styles.providerText}>
+                  {user.provider === 'google' && '🔵 Google'}
+                  {user.provider === 'apple' && '🍎 Apple'}
+                  {user.provider === 'username' && '👤 Username'}
+                </Text>
+              </View>
+            </View>
+          )}
           <Text style={styles.joinDate}>
             Joined {new Date(currentProfile.createdAt).toLocaleDateString()}
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.leaderboardButton}
-          onPress={() => setShowLeaderboard(true)}
-        >
-          <Text style={styles.leaderboardEmoji}>🏆</Text>
-          <Text style={styles.leaderboardText}>View Leaderboard</Text>
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.leaderboardButton}
+            onPress={() => setShowLeaderboard(true)}
+          >
+            <Text style={styles.leaderboardEmoji}>🏆</Text>
+            <Text style={styles.leaderboardText}>View Leaderboard</Text>
+          </TouchableOpacity>
+
+          {user && (
+            <TouchableOpacity
+              style={styles.signOutButton}
+              onPress={handleSignOut}
+            >
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>📊 Statistics</Text>
@@ -183,16 +243,43 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
+  authInfo: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  email: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 6,
+  },
+  providerBadge: {
+    backgroundColor: colors.card,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+  },
+  providerText: {
+    fontSize: 12,
+    color: colors.text,
+    fontWeight: '600',
+  },
   joinDate: {
     fontSize: 14,
     color: colors.textSecondary,
+    marginTop: 8,
+  },
+  actionButtons: {
+    marginBottom: 16,
+    gap: 12,
   },
   leaderboardButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.highlight,
-    marginBottom: 16,
     paddingVertical: 14,
     borderRadius: 12,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
@@ -206,6 +293,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  signOutButton: {
+    backgroundColor: colors.card,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.secondary,
+    alignItems: 'center',
+  },
+  signOutText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
   },
   card: {
     backgroundColor: colors.card,

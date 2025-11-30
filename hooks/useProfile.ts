@@ -25,6 +25,9 @@ export function useProfile() {
         const profile: UserProfile = JSON.parse(savedProfile);
         console.log('Loaded user profile:', profile.username);
         setCurrentProfile(profile);
+      } else {
+        console.log('No profile found');
+        setCurrentProfile(null);
       }
       setIsLoaded(true);
     } catch (error) {
@@ -208,6 +211,17 @@ export function useProfile() {
     }
   }, [allProfiles, currentProfile, switchProfile]);
 
+  const clearProfile = useCallback(async () => {
+    try {
+      console.log('Clearing current profile...');
+      await AsyncStorage.removeItem(PROFILE_KEY);
+      setCurrentProfile(null);
+      console.log('Profile cleared successfully');
+    } catch (error) {
+      console.error('Error clearing profile:', error);
+    }
+  }, []);
+
   const getLeaderboard = useCallback(() => {
     return [...allProfiles].sort((a, b) => {
       const scoreA = a.stats.totalCoinsEarned + (a.stats.rarePlantsFound * 100);
@@ -224,6 +238,7 @@ export function useProfile() {
     updateStats,
     switchProfile,
     deleteProfile,
+    clearProfile,
     getLeaderboard,
   };
 }
