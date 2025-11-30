@@ -20,6 +20,14 @@ const STAGE_EMOJIS: Record<PlantStage, string> = {
   ready: '',
 };
 
+const BEANSTALK_STAGE_EMOJIS: Record<PlantStage, string> = {
+  seed: '🌱',
+  sprout: '🌿',
+  growing: '🎋',
+  mature: '🌳',
+  ready: '☁️',
+};
+
 export function PlotCard({ plot, plotId, onPress, isSelected }: PlotCardProps) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
@@ -48,6 +56,15 @@ export function PlotCard({ plot, plotId, onPress, isSelected }: PlotCardProps) {
     return progress;
   };
 
+  const isBeanstalk = plot?.plant.id === 'giant_beanstalk';
+  const stageEmojis = isBeanstalk ? BEANSTALK_STAGE_EMOJIS : STAGE_EMOJIS;
+
+  const getBeanstalkHeight = () => {
+    if (!plot || !isBeanstalk) return 0;
+    const progress = getProgressPercentage();
+    return Math.floor((progress / 100) * 1000);
+  };
+
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <TouchableOpacity
@@ -55,27 +72,36 @@ export function PlotCard({ plot, plotId, onPress, isSelected }: PlotCardProps) {
           styles.plotCard,
           isSelected && styles.selectedPlot,
           !plot && styles.emptyPlot,
+          isBeanstalk && plot?.stage === 'ready' && styles.beanstalkCard,
         ]}
         onPress={handlePress}
         activeOpacity={0.7}
       >
         {plot ? (
           <View style={styles.plantContent}>
-            <Text style={styles.plantEmoji}>
-              {plot.stage === 'ready' ? plot.plant.emoji : STAGE_EMOJIS[plot.stage]}
+            <Text style={[styles.plantEmoji, isBeanstalk && styles.beanstalkEmoji]}>
+              {plot.stage === 'ready' ? plot.plant.emoji : stageEmojis[plot.stage]}
             </Text>
             {plot.hasWeeds && <Text style={styles.weedEmoji}>🌿</Text>}
             <Text style={styles.plantName}>{plot.plant.name}</Text>
+            {isBeanstalk && plot.stage !== 'ready' && (
+              <Text style={styles.heightText}>
+                {getBeanstalkHeight()} ft tall
+              </Text>
+            )}
             <View style={styles.progressBar}>
               <View
                 style={[
                   styles.progressFill,
                   { width: `${getProgressPercentage()}%` },
+                  isBeanstalk && styles.beanstalkProgress,
                 ]}
               />
             </View>
             {plot.stage === 'ready' && (
-              <Text style={styles.readyText}>Ready! 🎉</Text>
+              <Text style={styles.readyText}>
+                {isBeanstalk ? '1000 ft! ☁️' : 'Ready! 🎉'}
+              </Text>
             )}
           </View>
         ) : (
@@ -111,6 +137,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderStyle: 'dashed',
   },
+  beanstalkCard: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#4CAF50',
+    borderWidth: 3,
+  },
   plantContent: {
     alignItems: 'center',
     width: '100%',
@@ -118,6 +149,9 @@ const styles = StyleSheet.create({
   plantEmoji: {
     fontSize: 48,
     marginBottom: 8,
+  },
+  beanstalkEmoji: {
+    fontSize: 56,
   },
   weedEmoji: {
     position: 'absolute',
@@ -130,6 +164,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
+    textAlign: 'center',
+  },
+  heightText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4CAF50',
+    marginBottom: 4,
   },
   progressBar: {
     width: '100%',
@@ -142,6 +183,9 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: colors.secondary,
     borderRadius: 4,
+  },
+  beanstalkProgress: {
+    backgroundColor: '#4CAF50',
   },
   readyText: {
     fontSize: 12,

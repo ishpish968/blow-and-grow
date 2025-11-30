@@ -1,7 +1,7 @@
 
 export type PlantStage = 'seed' | 'sprout' | 'growing' | 'mature' | 'ready';
-export type PlantRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-export type PetType = 'dog' | 'cat' | 'rabbit' | 'bird' | 'bee' | 'butterfly' | 'dragon';
+export type PlantRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythical';
+export type PetType = 'dog' | 'cat' | 'rabbit' | 'bird' | 'bee' | 'butterfly' | 'dragon' | 'werewolf' | 'trex';
 
 export interface Plant {
   id: string;
@@ -55,4 +55,5 @@ export interface GameState {
     shovel: number;
   };
   rarePlantsFound: number;
+  lastSaveTime?: number;
 }

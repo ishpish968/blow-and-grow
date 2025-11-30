@@ -481,4 +481,16 @@ export const PLANTS_DATA: Plant[] = [
     isUnlocked: false,
     rarity: 'legendary',
   },
+  // MYTHICAL - The Giant Beanstalk (Rarest Plant)
+  {
+    id: 'giant_beanstalk',
+    name: 'Giant Beanstalk',
+    emoji: '🌱',
+    description: 'Legendary beanstalk that grows to 1000 feet tall! Reaches the clouds!',
+    growthTime: 300,
+    sellPrice: 1000,
+    unlockCost: 5000,
+    isUnlocked: false,
+    rarity: 'mythical',
+  },
 ];

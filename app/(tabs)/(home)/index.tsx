@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { useGameState } from '@/hooks/useGameState';
 import { PlotCard } from '@/components/PlotCard';
@@ -27,6 +27,7 @@ export default function HomeScreen() {
     setActivePet,
     discoverRarePlant,
     getActivePet,
+    isLoaded,
   } = useGameState();
 
   const [showPlantModal, setShowPlantModal] = useState(false);
@@ -75,6 +76,15 @@ export default function HomeScreen() {
 
   const plotsUsed = gameState.plots.filter((p) => p !== null).length;
 
+  if (!isLoaded) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading your garden...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -85,6 +95,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>🌱 Plant & Grow</Text>
           <Text style={styles.subtitle}>Grow your garden with pet companions!</Text>
+          <Text style={styles.offlineText}>✨ Plants grow even when you&apos;re away!</Text>
         </View>
 
         <StatsHeader
@@ -143,6 +154,9 @@ export default function HomeScreen() {
           <Text style={styles.instructionText}>
             ✨ Rare plants found: {gameState.rarePlantsFound}
           </Text>
+          <Text style={styles.instructionText}>
+            🌱 Try to unlock the legendary Giant Beanstalk!
+          </Text>
         </View>
       </ScrollView>
 
@@ -178,6 +192,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '600',
+  },
   scrollView: {
     flex: 1,
   },
@@ -200,6 +224,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  offlineText: {
+    fontSize: 14,
+    color: colors.highlight,
+    textAlign: 'center',
+    marginTop: 4,
+    fontWeight: '600',
   },
   gardenGrid: {
     flexDirection: 'row',

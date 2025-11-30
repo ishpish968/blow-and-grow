@@ -29,6 +29,7 @@ const RARITY_COLORS = {
   rare: '#9C27B0',
   epic: '#FF6F00',
   legendary: '#FFD700',
+  mythical: '#FF1493',
 };
 
 export function PlantSelectionModal({
@@ -99,6 +100,7 @@ export function PlantSelectionModal({
                 {plants.map((plant) => {
                   const isUnlocked = unlockedPlants.includes(plant.id);
                   const canAfford = coins >= plant.unlockCost;
+                  const isBeanstalk = plant.id === 'giant_beanstalk';
 
                   return (
                     <TouchableOpacity
@@ -106,13 +108,16 @@ export function PlantSelectionModal({
                       style={[
                         styles.plantCard,
                         !isUnlocked && styles.lockedCard,
+                        isBeanstalk && styles.beanstalkCard,
                       ]}
                       onPress={() =>
                         isUnlocked ? handleSelectPlant(plant) : handleUnlock(plant)
                       }
                       disabled={!isUnlocked && !canAfford}
                     >
-                      <Text style={styles.plantEmoji}>{plant.emoji}</Text>
+                      <Text style={[styles.plantEmoji, isBeanstalk && styles.beanstalkEmoji]}>
+                        {plant.emoji}
+                      </Text>
                       <View style={styles.plantInfo}>
                         <Text style={styles.plantName}>{plant.name}</Text>
                         <Text style={styles.plantDescription}>
@@ -229,9 +234,17 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     borderColor: colors.textSecondary,
   },
+  beanstalkCard: {
+    borderColor: '#FF1493',
+    borderWidth: 3,
+    backgroundColor: '#FFF0F5',
+  },
   plantEmoji: {
     fontSize: 48,
     marginRight: 16,
+  },
+  beanstalkEmoji: {
+    fontSize: 56,
   },
   plantInfo: {
     flex: 1,
