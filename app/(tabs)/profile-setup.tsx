@@ -1,13 +1,16 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
+import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 
 export default function ProfileSetupScreen() {
   const [username, setUsername] = useState('');
   const { createProfile } = useProfile();
+  const { signIn } = useAuth();
 
   const handleCreateProfile = async () => {
     if (username.trim().length < 3) {
@@ -21,6 +24,14 @@ export default function ProfileSetupScreen() {
     }
 
     try {
+      // Create auth user with username provider
+      const authUser = {
+        id: `username_${Date.now()}`,
+        name: username.trim(),
+        provider: 'username' as const,
+      };
+      
+      await signIn(authUser);
       await createProfile(username.trim());
       router.replace('/(tabs)/(home)');
     } catch (error) {
@@ -30,44 +41,55 @@ export default function ProfileSetupScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.emoji}>🌱</Text>
-        <Text style={styles.title}>Welcome to Blow and Grow!</Text>
-        <Text style={styles.subtitle}>Create your gardener profile to start tracking your progress</Text>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          <Text style={styles.emoji}>🌱</Text>
+          <Text style={styles.title}>Welcome to Blow and Grow!</Text>
+          <Text style={styles.subtitle}>Create your gardener profile to start tracking your progress</Text>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Choose Your Username</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter username..."
-            placeholderTextColor={colors.textSecondary}
-            value={username}
-            onChangeText={setUsername}
-            maxLength={20}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Text style={styles.hint}>3-20 characters</Text>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Choose Your Username</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter username..."
+              placeholderTextColor={colors.textSecondary}
+              value={username}
+              onChangeText={setUsername}
+              maxLength={20}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.hint}>3-20 characters</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, username.trim().length < 3 && styles.buttonDisabled]}
+            onPress={handleCreateProfile}
+            disabled={username.trim().length < 3}
+          >
+            <Text style={styles.buttonText}>Start Growing! 🌱</Text>
+          </TouchableOpacity>
+
+          <SocialAuthButtons />
+
+          <View style={styles.features}>
+            <Text style={styles.featureTitle}>Track Your Progress:</Text>
+            <Text style={styles.featureItem}>📊 Monitor your garden statistics</Text>
+            <Text style={styles.featureItem}>🏆 Unlock achievements</Text>
+            <Text style={styles.featureItem}>🎯 Compete with other gardeners</Text>
+            <Text style={styles.featureItem}>🌟 Discover rare plants</Text>
+          </View>
         </View>
-
-        <TouchableOpacity
-          style={[styles.button, username.trim().length < 3 && styles.buttonDisabled]}
-          onPress={handleCreateProfile}
-          disabled={username.trim().length < 3}
-        >
-          <Text style={styles.buttonText}>Start Growing! 🌱</Text>
-        </TouchableOpacity>
-
-        <View style={styles.features}>
-          <Text style={styles.featureTitle}>Track Your Progress:</Text>
-          <Text style={styles.featureItem}>📊 Monitor your garden statistics</Text>
-          <Text style={styles.featureItem}>🏆 Unlock achievements</Text>
-          <Text style={styles.featureItem}>🎯 Compete with other gardeners</Text>
-          <Text style={styles.featureItem}>🌟 Discover rare plants</Text>
-        </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -75,9 +97,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    paddingVertical: 40,
   },
   content: {
     width: '100%',
