@@ -4,6 +4,7 @@ import { GameState, PlantedPlot, Plant, PlantStage, Pet } from '@/types/GameType
 import { PLANTS_DATA } from '@/data/plantsData';
 import { PETS_DATA } from '@/data/petsData';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useProfile } from '@/hooks/useProfile';
 
 const STORAGE_KEY = '@garden_game_state';
 
@@ -26,6 +27,7 @@ export function useGameState() {
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const lastAutoWaterRef = useRef<number>(Date.now());
+  const { currentProfile, updateStats } = useProfile();
 
   // Load game state from AsyncStorage
   useEffect(() => {
@@ -38,6 +40,22 @@ export function useGameState() {
       saveGameState();
     }
   }, [gameState, isLoaded]);
+
+  // Update profile stats when game state changes
+  useEffect(() => {
+    if (isLoaded && currentProfile) {
+      const petsUnlocked = gameState.pets.filter(p => p.isUnlocked).length;
+      const giantBeanstalkUnlocked = gameState.unlockedPlants.includes('giant_beanstalk');
+      
+      updateStats({
+        plantsUnlocked: gameState.unlockedPlants.length,
+        petsUnlocked,
+        rarePlantsFound: gameState.rarePlantsFound,
+        highestCoinBalance: Math.max(currentProfile.stats.highestCoinBalance, gameState.coins),
+        giantBeanstalkUnlocked,
+      });
+    }
+  }, [gameState.coins, gameState.unlockedPlants.length, gameState.rarePlantsFound, isLoaded]);
 
   const loadGameState = async () => {
     try {
@@ -252,7 +270,14 @@ export function useGameState() {
       return { ...prev, plots: newPlots };
     });
     setSelectedPlot(null);
-  }, []);
+
+    // Update profile stats
+    if (currentProfile) {
+      updateStats({
+        totalPlantsGrown: currentProfile.stats.totalPlantsGrown + 1,
+      });
+    }
+  }, [currentProfile, updateStats]);
 
   const waterPlant = useCallback((plotId: number) => {
     setGameState((prev) => {
@@ -300,6 +325,14 @@ export function useGameState() {
         rarePlantsFound += 1;
       }
 
+      // Update profile stats
+      if (currentProfile) {
+        updateStats({
+          totalHarvests: currentProfile.stats.totalHarvests + 1,
+          totalCoinsEarned: currentProfile.stats.totalCoinsEarned + earnedCoins,
+        });
+      }
+
       return {
         ...prev,
         plots: newPlots,
@@ -307,7 +340,7 @@ export function useGameState() {
         rarePlantsFound,
       };
     });
-  }, [getCoinMultiplier]);
+  }, [getCoinMultiplier, currentProfile, updateStats]);
 
   const unlockPlant = useCallback((plantId: string) => {
     const plant = PLANTS_DATA.find((p) => p.id === plantId);

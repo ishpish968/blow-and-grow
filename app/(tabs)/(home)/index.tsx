@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { useGameState } from '@/hooks/useGameState';
+import { useProfile } from '@/hooks/useProfile';
 import { PlotCard } from '@/components/PlotCard';
 import { ActionButtons } from '@/components/ActionButtons';
 import { PlantSelectionModal } from '@/components/PlantSelectionModal';
@@ -12,6 +13,7 @@ import { RarePlantDiscovery } from '@/components/RarePlantDiscovery';
 import { StatsHeader } from '@/components/StatsHeader';
 import { Plant } from '@/types/GameTypes';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 
 export default function HomeScreen() {
   const {
@@ -30,11 +32,20 @@ export default function HomeScreen() {
     isLoaded,
   } = useGameState();
 
+  const { currentProfile, isLoaded: profileLoaded } = useProfile();
+
   const [showPlantModal, setShowPlantModal] = useState(false);
   const [showPetModal, setShowPetModal] = useState(false);
   const [discoveredPlant, setDiscoveredPlant] = useState<Plant | null>(null);
 
   const activePet = getActivePet();
+
+  // Redirect to profile setup if no profile exists
+  useEffect(() => {
+    if (profileLoaded && !currentProfile) {
+      router.replace('/(tabs)/profile-setup');
+    }
+  }, [profileLoaded, currentProfile]);
 
   useEffect(() => {
     if (!activePet) return;
@@ -76,13 +87,17 @@ export default function HomeScreen() {
 
   const plotsUsed = gameState.plots.filter((p) => p !== null).length;
 
-  if (!isLoaded) {
+  if (!isLoaded || !profileLoaded) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Loading your garden...</Text>
       </View>
     );
+  }
+
+  if (!currentProfile) {
+    return null; // Will redirect in useEffect
   }
 
   return (
@@ -93,8 +108,8 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>🌱 Plant & Grow</Text>
-          <Text style={styles.subtitle}>Grow your garden with pet companions!</Text>
+          <Text style={styles.title}>🌱 Blow and Grow</Text>
+          <Text style={styles.subtitle}>Welcome back, {currentProfile.username}!</Text>
           <Text style={styles.offlineText}>✨ Plants grow even when you&apos;re away!</Text>
         </View>
 
