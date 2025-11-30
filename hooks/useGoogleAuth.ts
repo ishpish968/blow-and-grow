@@ -10,7 +10,7 @@ WebBrowser.maybeCompleteAuthSession();
 // GOOGLE OAUTH SETUP INSTRUCTIONS
 // ============================================================================
 // 
-// To fix the "access blocked" error, you need to:
+// To fix the "Google OAuth not configured" error, you need to:
 //
 // 1. Go to Google Cloud Console: https://console.cloud.google.com/
 // 2. Create a new project or select an existing one
@@ -36,8 +36,8 @@ WebBrowser.maybeCompleteAuthSession();
 //    - Copy the Client ID and paste it below as GOOGLE_CLIENT_ID_WEB
 //
 // 5. IMPORTANT: Add authorized redirect URIs in Google Cloud Console:
-//    - For development: natively://auth
-//    - For Expo Go: exp://127.0.0.1:19000/--/auth (adjust port if needed)
+//    - The redirect URI will be logged to console when you run the app
+//    - Copy that exact URI and add it to your OAuth credentials
 //
 // 6. Replace the placeholder values below with your actual Client IDs
 //
@@ -81,9 +81,24 @@ export function useGoogleAuth() {
     path: 'auth',
   });
 
-  console.log('Google OAuth Redirect URI:', redirectUri);
-  console.log('Google OAuth Client ID:', getGoogleClientId());
-  console.log('OAuth Configured:', isConfigured());
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📱 GOOGLE OAUTH CONFIGURATION');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('Platform:', Platform.OS);
+  console.log('Client ID:', getGoogleClientId());
+  console.log('Configured:', isConfigured() ? '✅ YES' : '❌ NO');
+  console.log('Redirect URI:', redirectUri);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  if (!isConfigured()) {
+    console.log('⚠️  SETUP REQUIRED:');
+    console.log('1. Go to: https://console.cloud.google.com/');
+    console.log('2. Create OAuth 2.0 credentials');
+    console.log('3. Add this redirect URI to your credentials:');
+    console.log('   👉', redirectUri);
+    console.log('4. Update Client IDs in: hooks/useGoogleAuth.ts');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  }
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -101,21 +116,23 @@ export function useGoogleAuth() {
 
   useEffect(() => {
     if (response?.type === 'success') {
-      console.log('Google auth success:', response);
+      console.log('✅ Google auth success:', response);
       const { code } = response.params;
       
       // Exchange code for tokens and fetch user info
       exchangeCodeForTokens(code);
     } else if (response?.type === 'error') {
-      console.error('Google auth error:', response.error);
+      console.error('❌ Google auth error:', response.error);
       setError(response.error?.message || 'Authentication failed');
     } else if (response?.type === 'cancel') {
-      console.log('Google auth cancelled by user');
+      console.log('🚫 Google auth cancelled by user');
     }
   }, [response]);
 
   const exchangeCodeForTokens = async (code: string) => {
     try {
+      console.log('🔄 Exchanging authorization code for tokens...');
+      
       // Exchange the authorization code for tokens
       const tokenResponse = await AuthSession.exchangeCodeAsync(
         {
@@ -129,7 +146,7 @@ export function useGoogleAuth() {
         discovery
       );
 
-      console.log('Token exchange successful');
+      console.log('✅ Token exchange successful');
 
       // Fetch user info from Google
       const userInfoResponse = await fetch(
@@ -142,12 +159,12 @@ export function useGoogleAuth() {
       );
 
       const userData = await userInfoResponse.json();
-      console.log('User info fetched:', userData);
+      console.log('✅ User info fetched:', userData);
       setUserInfo(userData);
 
       return userData;
     } catch (err) {
-      console.error('Error exchanging code for tokens:', err);
+      console.error('❌ Error exchanging code for tokens:', err);
       setError('Failed to complete authentication');
       throw err;
     }
@@ -161,35 +178,53 @@ export function useGoogleAuth() {
       // Check if OAuth is configured
       if (!isConfigured()) {
         const setupInstructions = `
-Google OAuth is not configured yet!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  GOOGLE OAUTH NOT CONFIGURED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-To fix the "access blocked" error:
+To enable Google Sign-In, follow these steps:
 
-1. Go to Google Cloud Console
+1️⃣  Go to Google Cloud Console:
    https://console.cloud.google.com/
 
-2. Create OAuth 2.0 credentials for:
-   - iOS (Bundle ID: com.anonymous.blowandgrow)
-   - Android (Package: com.anonymous.blowandgrow)
-   - Web (for testing)
+2️⃣  Create a new project (or select existing)
 
-3. Add this redirect URI to your OAuth credentials:
-   ${redirectUri}
+3️⃣  Enable Google+ API or Google Identity Services
 
-4. Update the Client IDs in:
+4️⃣  Create OAuth 2.0 Client IDs:
+   
+   For ${Platform.OS.toUpperCase()}:
+   - Application type: ${Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'Web application'}
+   - ${Platform.OS === 'ios' ? 'Bundle ID' : Platform.OS === 'android' ? 'Package name' : 'Name'}: com.anonymous.blowandgrow
+   ${Platform.OS === 'android' ? '- SHA-1: Run "keytool -keystore ~/.android/debug.keystore -list -v"' : ''}
+
+5️⃣  Add this EXACT redirect URI to your OAuth credentials:
+   
+   👉 ${redirectUri}
+   
+   ⚠️  Copy this exactly! It must match perfectly.
+
+6️⃣  Copy your Client ID and update it in:
    hooks/useGoogleAuth.ts
+   
+   Replace: ${getGoogleClientId()}
+   With your actual Client ID from Google Cloud Console
 
-Current platform: ${Platform.OS}
-Current Client ID: ${getGoogleClientId()}
+7️⃣  Restart the app after updating
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 For detailed instructions, see: docs/GOOGLE_OAUTH_SETUP.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         `.trim();
 
-        console.error(setupInstructions);
+        console.log(setupInstructions);
         setError('Google OAuth not configured. Check console for setup instructions.');
         
         return {
           success: false,
           error: 'OAuth not configured',
           setupInstructions,
+          redirectUri,
         };
       }
 
@@ -197,10 +232,11 @@ Current Client ID: ${getGoogleClientId()}
         throw new Error('Auth request not ready. Please try again.');
       }
 
-      console.log('Starting Google sign-in flow...');
+      console.log('🚀 Starting Google sign-in flow...');
       const result = await promptAsync();
 
       if (result.type === 'success') {
+        console.log('✅ Sign-in successful, waiting for user info...');
         // Wait for the token exchange to complete
         // The userInfo will be set by the useEffect hook
         return {
@@ -208,7 +244,7 @@ Current Client ID: ${getGoogleClientId()}
           params: result.params,
         };
       } else if (result.type === 'cancel') {
-        console.log('User cancelled Google sign-in');
+        console.log('🚫 User cancelled Google sign-in');
         return { success: false, cancelled: true };
       } else if (result.type === 'error') {
         throw new Error(result.error?.message || 'Authentication failed');
@@ -216,7 +252,7 @@ Current Client ID: ${getGoogleClientId()}
         throw new Error('Authentication failed');
       }
     } catch (err) {
-      console.error('Google sign-in error:', err);
+      console.error('❌ Google sign-in error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
       
@@ -238,5 +274,7 @@ Current Client ID: ${getGoogleClientId()}
     userInfo,
     isConfigured: isConfigured(),
     redirectUri,
+    clientId: getGoogleClientId(),
+    platform: Platform.OS,
   };
 }

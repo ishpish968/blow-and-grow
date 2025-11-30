@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Alert, ScrollView } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { colors } from '@/styles/commonStyles';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
@@ -21,6 +21,8 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
     isConfigured: googleConfigured,
     redirectUri,
     userInfo,
+    clientId,
+    platform,
   } = useGoogleAuth();
   
   const { signInWithApple, isAvailable: appleAvailable, isLoading: appleLoading } = useAppleAuth();
@@ -64,6 +66,91 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
     }
   };
 
+  const showSetupInstructions = () => {
+    const message = `To enable Google Sign-In, you need to configure OAuth credentials:
+
+1. Go to Google Cloud Console
+   console.cloud.google.com
+
+2. Create OAuth 2.0 credentials for ${platform}
+
+3. Add this redirect URI:
+   ${redirectUri}
+
+4. Update the Client ID in:
+   hooks/useGoogleAuth.ts
+
+Current Client ID:
+${clientId}
+
+See docs/GOOGLE_OAUTH_SETUP.md for detailed instructions.`;
+
+    Alert.alert(
+      '🔧 Setup Required',
+      message,
+      [
+        {
+          text: 'Copy Redirect URI',
+          onPress: () => {
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('📋 COPY THIS REDIRECT URI TO GOOGLE CLOUD CONSOLE:');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log(redirectUri);
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            
+            Alert.alert(
+              'Redirect URI',
+              `Copied to console:\n\n${redirectUri}\n\nAdd this to your Google Cloud Console OAuth credentials.`
+            );
+          },
+        },
+        {
+          text: 'View Full Instructions',
+          onPress: () => {
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('📚 GOOGLE OAUTH SETUP INSTRUCTIONS');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('');
+            console.log('1️⃣  Go to: https://console.cloud.google.com/');
+            console.log('');
+            console.log('2️⃣  Create a new project or select existing');
+            console.log('');
+            console.log('3️⃣  Enable Google+ API or Google Identity Services');
+            console.log('');
+            console.log('4️⃣  Go to Credentials → Create Credentials → OAuth client ID');
+            console.log('');
+            console.log(`5️⃣  Select application type: ${platform === 'ios' ? 'iOS' : platform === 'android' ? 'Android' : 'Web application'}`);
+            console.log('');
+            console.log('6️⃣  Enter details:');
+            console.log('    - Bundle/Package: com.anonymous.blowandgrow');
+            if (platform === 'android') {
+              console.log('    - SHA-1: Run "keytool -keystore ~/.android/debug.keystore -list -v"');
+            }
+            console.log('');
+            console.log('7️⃣  Add this redirect URI:');
+            console.log(`    👉 ${redirectUri}`);
+            console.log('');
+            console.log('8️⃣  Copy the Client ID and update it in:');
+            console.log('    hooks/useGoogleAuth.ts');
+            console.log('');
+            console.log('    Replace this:');
+            console.log(`    ${clientId}`);
+            console.log('');
+            console.log('    With your actual Client ID from Google Cloud Console');
+            console.log('');
+            console.log('9️⃣  Restart the app');
+            console.log('');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('📖 For more details, see: docs/GOOGLE_OAUTH_SETUP.md');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          },
+        },
+        { text: 'OK' },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const handleGoogleSignIn = async () => {
     try {
       console.log('Google sign-in button pressed');
@@ -78,25 +165,7 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
 
         if (result.setupInstructions) {
           // Show setup instructions
-          Alert.alert(
-            'Google OAuth Setup Required',
-            'Google Sign-In needs to be configured. Please check the console logs for detailed setup instructions.\n\n' +
-            `Your redirect URI is:\n${redirectUri}\n\n` +
-            'Add this to your Google Cloud Console OAuth credentials.',
-            [
-              {
-                text: 'Copy Redirect URI',
-                onPress: () => {
-                  console.log('='.repeat(60));
-                  console.log('COPY THIS REDIRECT URI:');
-                  console.log(redirectUri);
-                  console.log('='.repeat(60));
-                  Alert.alert('Redirect URI', `Copied to console:\n${redirectUri}`);
-                },
-              },
-              { text: 'OK' },
-            ]
-          );
+          showSetupInstructions();
           return;
         }
 
@@ -172,7 +241,7 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
         <TouchableOpacity
           style={[
             styles.googleButton,
-            (googleLoading || !googleConfigured) && styles.googleButtonDisabled,
+            googleLoading && styles.googleButtonDisabled,
           ]}
           onPress={handleGoogleSignIn}
           disabled={googleLoading}
@@ -184,16 +253,24 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
         </TouchableOpacity>
 
         {!googleConfigured && (
-          <View style={styles.warningBox}>
-            <Text style={styles.warningIcon}>⚠️</Text>
-            <Text style={styles.warningText}>
-              Google Sign-In requires setup. Tap the button above for instructions.
-            </Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.setupBox}
+            onPress={showSetupInstructions}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.setupIcon}>⚙️</Text>
+            <View style={styles.setupTextContainer}>
+              <Text style={styles.setupTitle}>Setup Required</Text>
+              <Text style={styles.setupText}>
+                Google Sign-In needs configuration. Tap here for instructions.
+              </Text>
+            </View>
+          </TouchableOpacity>
         )}
 
         {googleError && (
           <View style={styles.errorBox}>
+            <Text style={styles.errorIcon}>❌</Text>
             <Text style={styles.errorText}>{googleError}</Text>
           </View>
         )}
@@ -259,27 +336,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#3C4043',
   },
-  warningBox: {
+  setupBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF3CD',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#FFE69C',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     marginTop: 8,
   },
-  warningIcon: {
-    fontSize: 20,
-    marginRight: 8,
+  setupIcon: {
+    fontSize: 24,
+    marginRight: 12,
   },
-  warningText: {
+  setupTextContainer: {
     flex: 1,
+  },
+  setupTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#856404',
+    marginBottom: 4,
+  },
+  setupText: {
     fontSize: 13,
     color: '#856404',
     lineHeight: 18,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F8D7DA',
     borderWidth: 1,
     borderColor: '#F5C2C7',
@@ -287,7 +374,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 8,
   },
+  errorIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
   errorText: {
+    flex: 1,
     fontSize: 13,
     color: '#842029',
     lineHeight: 18,
