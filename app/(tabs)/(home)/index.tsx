@@ -1,12 +1,17 @@
 
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { useGameState } from '@/hooks/useGameState';
 import { PlotCard } from '@/components/PlotCard';
 import { ActionButtons } from '@/components/ActionButtons';
 import { PlantSelectionModal } from '@/components/PlantSelectionModal';
+import { PetSelectionModal } from '@/components/PetSelectionModal';
+import { ActivePetDisplay } from '@/components/ActivePetDisplay';
+import { RarePlantDiscovery } from '@/components/RarePlantDiscovery';
 import { StatsHeader } from '@/components/StatsHeader';
+import { Plant } from '@/types/GameTypes';
+import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
   const {
@@ -18,9 +23,30 @@ export default function HomeScreen() {
     removeWeeds,
     harvestPlant,
     unlockPlant,
+    unlockPet,
+    setActivePet,
+    discoverRarePlant,
+    getActivePet,
   } = useGameState();
 
   const [showPlantModal, setShowPlantModal] = useState(false);
+  const [showPetModal, setShowPetModal] = useState(false);
+  const [discoveredPlant, setDiscoveredPlant] = useState<Plant | null>(null);
+
+  const activePet = getActivePet();
+
+  useEffect(() => {
+    if (!activePet) return;
+
+    const interval = setInterval(() => {
+      const plant = discoverRarePlant();
+      if (plant) {
+        setDiscoveredPlant(plant);
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [activePet, discoverRarePlant]);
 
   const handlePlotPress = (plotId: number) => {
     setSelectedPlot(plotId === selectedPlot ? null : plotId);
@@ -37,6 +63,16 @@ export default function HomeScreen() {
     }
   };
 
+  const handleDiscoverPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const plant = discoverRarePlant();
+    if (plant) {
+      setDiscoveredPlant(plant);
+    } else {
+      console.log('No rare plant discovered this time');
+    }
+  };
+
   const plotsUsed = gameState.plots.filter((p) => p !== null).length;
 
   return (
@@ -48,7 +84,7 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>🌱 Plant & Grow</Text>
-          <Text style={styles.subtitle}>Grow your garden and harvest rewards!</Text>
+          <Text style={styles.subtitle}>Grow your garden with pet companions!</Text>
         </View>
 
         <StatsHeader
@@ -56,6 +92,21 @@ export default function HomeScreen() {
           plotsUsed={plotsUsed}
           totalPlots={gameState.plots.length}
         />
+
+        <ActivePetDisplay
+          pet={activePet}
+          onPress={() => setShowPetModal(true)}
+        />
+
+        {activePet && activePet.ability.type === 'rare_finder' && (
+          <TouchableOpacity
+            style={styles.discoverButton}
+            onPress={handleDiscoverPress}
+          >
+            <Text style={styles.discoverEmoji}>🔍</Text>
+            <Text style={styles.discoverText}>Search for Rare Plants</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.gardenGrid}>
           {gameState.plots.map((plot, index) => (
@@ -87,7 +138,10 @@ export default function HomeScreen() {
             💡 Tap a plot to select it, then use the buttons to interact!
           </Text>
           <Text style={styles.instructionText}>
-            🌱 Plant seeds, water them, remove weeds, and harvest when ready!
+            🐾 Select a pet companion to help you grow exotic plants!
+          </Text>
+          <Text style={styles.instructionText}>
+            ✨ Rare plants found: {gameState.rarePlantsFound}
           </Text>
         </View>
       </ScrollView>
@@ -99,6 +153,21 @@ export default function HomeScreen() {
         unlockedPlants={gameState.unlockedPlants}
         coins={gameState.coins}
         onUnlockPlant={unlockPlant}
+      />
+
+      <PetSelectionModal
+        visible={showPetModal}
+        onClose={() => setShowPetModal(false)}
+        pets={gameState.pets}
+        activePetId={gameState.activePet}
+        coins={gameState.coins}
+        onUnlockPet={unlockPet}
+        onSelectPet={setActivePet}
+      />
+
+      <RarePlantDiscovery
+        plant={discoveredPlant}
+        onClose={() => setDiscoveredPlant(null)}
       />
     </View>
   );
@@ -145,6 +214,27 @@ const styles = StyleSheet.create({
   actionsContainer: {
     marginTop: 16,
     marginBottom: 16,
+  },
+  discoverButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.highlight,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  discoverEmoji: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  discoverText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   instructions: {
     paddingHorizontal: 24,

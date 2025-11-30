@@ -23,6 +23,14 @@ interface PlantSelectionModalProps {
   onUnlockPlant: (plantId: string) => void;
 }
 
+const RARITY_COLORS = {
+  common: '#A7C957',
+  uncommon: '#4A90E2',
+  rare: '#9C27B0',
+  epic: '#FF6F00',
+  legendary: '#FFD700',
+};
+
 export function PlantSelectionModal({
   visible,
   onClose,
@@ -47,6 +55,14 @@ export function PlantSelectionModal({
     }
   };
 
+  const groupedPlants = PLANTS_DATA.reduce((acc, plant) => {
+    if (!acc[plant.rarity]) {
+      acc[plant.rarity] = [];
+    }
+    acc[plant.rarity].push(plant);
+    return acc;
+  }, {} as Record<string, Plant[]>);
+
   return (
     <Modal
       visible={visible}
@@ -68,57 +84,71 @@ export function PlantSelectionModal({
             contentContainerStyle={styles.plantList}
             showsVerticalScrollIndicator={false}
           >
-            {PLANTS_DATA.map((plant) => {
-              const isUnlocked = unlockedPlants.includes(plant.id);
-              const canAfford = coins >= plant.unlockCost;
+            {Object.entries(groupedPlants).map(([rarity, plants]) => (
+              <React.Fragment key={rarity}>
+                <View style={styles.rarityHeader}>
+                  <Text
+                    style={[
+                      styles.rarityTitle,
+                      { color: RARITY_COLORS[rarity as keyof typeof RARITY_COLORS] },
+                    ]}
+                  >
+                    {rarity.toUpperCase()}
+                  </Text>
+                </View>
+                {plants.map((plant) => {
+                  const isUnlocked = unlockedPlants.includes(plant.id);
+                  const canAfford = coins >= plant.unlockCost;
 
-              return (
-                <TouchableOpacity
-                  key={plant.id}
-                  style={[
-                    styles.plantCard,
-                    !isUnlocked && styles.lockedCard,
-                  ]}
-                  onPress={() =>
-                    isUnlocked ? handleSelectPlant(plant) : handleUnlock(plant)
-                  }
-                  disabled={!isUnlocked && !canAfford}
-                >
-                  <Text style={styles.plantEmoji}>{plant.emoji}</Text>
-                  <View style={styles.plantInfo}>
-                    <Text style={styles.plantName}>{plant.name}</Text>
-                    <Text style={styles.plantDescription}>
-                      {plant.description}
-                    </Text>
-                    <View style={styles.plantStats}>
-                      <Text style={styles.statText}>
-                        ⏱️ {plant.growthTime}s
-                      </Text>
-                      <Text style={styles.statText}>
-                        💰 {plant.sellPrice}
-                      </Text>
-                    </View>
-                    {!isUnlocked && (
-                      <View
-                        style={[
-                          styles.unlockBadge,
-                          !canAfford && styles.cantAffordBadge,
-                        ]}
-                      >
-                        <Text style={styles.unlockText}>
-                          {canAfford
-                            ? `Unlock: ${plant.unlockCost} 💰`
-                            : `Need: ${plant.unlockCost} 💰`}
+                  return (
+                    <TouchableOpacity
+                      key={plant.id}
+                      style={[
+                        styles.plantCard,
+                        !isUnlocked && styles.lockedCard,
+                      ]}
+                      onPress={() =>
+                        isUnlocked ? handleSelectPlant(plant) : handleUnlock(plant)
+                      }
+                      disabled={!isUnlocked && !canAfford}
+                    >
+                      <Text style={styles.plantEmoji}>{plant.emoji}</Text>
+                      <View style={styles.plantInfo}>
+                        <Text style={styles.plantName}>{plant.name}</Text>
+                        <Text style={styles.plantDescription}>
+                          {plant.description}
                         </Text>
+                        <View style={styles.plantStats}>
+                          <Text style={styles.statText}>
+                            ⏱️ {plant.growthTime}s
+                          </Text>
+                          <Text style={styles.statText}>
+                            💰 {plant.sellPrice}
+                          </Text>
+                        </View>
+                        {!isUnlocked && (
+                          <View
+                            style={[
+                              styles.unlockBadge,
+                              !canAfford && styles.cantAffordBadge,
+                            ]}
+                          >
+                            <Text style={styles.unlockText}>
+                              {canAfford
+                                ? `Unlock: ${plant.unlockCost} 💰`
+                                : `Need: ${plant.unlockCost} 💰`}
+                            </Text>
+                          </View>
+                        )}
                       </View>
-                    )}
-                  </View>
-                  {isUnlocked && (
-                    <Text style={styles.selectArrow}>→</Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+                      {isUnlocked && (
+                        <Text style={styles.selectArrow}>→</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </ScrollView>
         </View>
       </View>
@@ -173,6 +203,15 @@ const styles = StyleSheet.create({
   plantList: {
     padding: 16,
     paddingBottom: 32,
+  },
+  rarityHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  rarityTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   plantCard: {
     flexDirection: 'row',
