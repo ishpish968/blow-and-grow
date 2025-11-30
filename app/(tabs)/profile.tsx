@@ -96,7 +96,7 @@ export default function ProfileScreen() {
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
-            <AvatarDisplay size={100} />
+            <AvatarDisplay size={100} avatarId={currentProfile.avatar} />
             <Text style={styles.changeAvatarText}>Tap to change</Text>
           </TouchableOpacity>
           <Text style={styles.username}>{currentProfile.username}</Text>

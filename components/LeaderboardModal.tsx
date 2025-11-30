@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { UserProfile } from '@/types/ProfileTypes';
+import { AvatarDisplay } from './AvatarDisplay';
 
 interface LeaderboardModalProps {
   visible: boolean;
@@ -60,7 +61,7 @@ export function LeaderboardModal({ visible, onClose, profiles, currentProfileId 
                         <Text style={styles.rankText}>{getRankEmoji(index)}</Text>
                       </View>
 
-                      <Text style={styles.avatar}>{profile.avatar}</Text>
+                      <AvatarDisplay size={48} avatarId={profile.avatar} />
 
                       <View style={styles.profileInfo}>
                         <Text style={[styles.username, isCurrentUser && styles.currentUsername]}>
@@ -145,6 +146,7 @@ const styles = StyleSheet.create({
     borderColor: colors.secondary,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 2,
+    gap: 12,
   },
   currentUserCard: {
     borderColor: colors.primary,
@@ -160,10 +162,6 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 20,
     fontWeight: '700',
-  },
-  avatar: {
-    fontSize: 32,
-    marginRight: 12,
   },
   profileInfo: {
     flex: 1,

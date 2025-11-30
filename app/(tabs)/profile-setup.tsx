@@ -11,7 +11,7 @@ import { AvatarSelectionModal } from '@/components/AvatarSelectionModal';
 
 export default function ProfileSetupScreen() {
   const [username, setUsername] = useState('');
-  const [selectedAvatarId, setSelectedAvatarId] = useState('girl_default');
+  const [selectedAvatarId, setSelectedAvatarId] = useState('girl_planting');
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const { createProfile } = useProfile();
   const { signIn } = useAuth();
@@ -65,7 +65,7 @@ export default function ProfileSetupScreen() {
               style={styles.avatarButton}
               onPress={() => setShowAvatarModal(true)}
             >
-              <AvatarDisplay size={100} />
+              <AvatarDisplay size={100} avatarId={selectedAvatarId} />
               <Text style={styles.changeAvatarText}>Tap to change</Text>
             </TouchableOpacity>
           </View>

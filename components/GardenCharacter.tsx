@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 import { AvatarDisplay } from './AvatarDisplay';
 import { AvatarAction } from '@/types/AvatarTypes';
+import { useProfile } from '@/hooks/useProfile';
 
 interface GardenCharacterProps {
   currentAction?: AvatarAction;
@@ -11,6 +12,7 @@ interface GardenCharacterProps {
 export function GardenCharacter({ currentAction = 'idle' }: GardenCharacterProps) {
   const [action, setAction] = useState<AvatarAction>(currentAction);
   const bounceAnim = React.useRef(new Animated.Value(0)).current;
+  const { profile } = useProfile();
 
   useEffect(() => {
     setAction(currentAction);
@@ -39,7 +41,12 @@ export function GardenCharacter({ currentAction = 'idle' }: GardenCharacterProps
 
   return (
     <Animated.View style={[styles.container, { transform: [{ translateY: bounceAnim }] }]}>
-      <AvatarDisplay size={100} action={action} showLabel={true} />
+      <AvatarDisplay 
+        size={100} 
+        action={action} 
+        showLabel={true} 
+        avatarId={profile?.avatar || 'girl_planting'}
+      />
     </Animated.View>
   );
 }

@@ -2,15 +2,16 @@
 import React from 'react';
 import { View, Image, StyleSheet, Text } from 'react-native';
 import { colors } from '@/styles/commonStyles';
-import { AvatarAction } from '@/types/AvatarTypes';
+import { AvatarAction, AVATAR_SPRITES } from '@/types/AvatarTypes';
 
 interface AvatarDisplayProps {
   size?: number;
   action?: AvatarAction;
   showLabel?: boolean;
+  avatarId?: string;
 }
 
-export function AvatarDisplay({ size = 80, action = 'idle', showLabel = false }: AvatarDisplayProps) {
+export function AvatarDisplay({ size = 80, action = 'idle', showLabel = false, avatarId = 'girl_planting' }: AvatarDisplayProps) {
   const getActionLabel = () => {
     switch (action) {
       case 'planting':
@@ -26,11 +27,13 @@ export function AvatarDisplay({ size = 80, action = 'idle', showLabel = false }:
     }
   };
 
+  const avatar = AVATAR_SPRITES.find(sprite => sprite.id === avatarId) || AVATAR_SPRITES[0];
+
   return (
     <View style={styles.container}>
       <View style={[styles.avatarContainer, { width: size, height: size }]}>
         <Image
-          source={require('@/assets/images/3c4f974f-6943-409e-8eb8-0382ef14fffd.png')}
+          source={avatar.image}
           style={[styles.avatar, { width: size, height: size }]}
           resizeMode="contain"
         />
