@@ -13,6 +13,7 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { gameState } = useGameState();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
     Alert.alert(
@@ -25,21 +26,30 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Starting sign out process...');
+              setIsSigningOut(true);
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.log('🚪 User initiated sign out from profile screen');
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
               
-              // Sign out from auth context (this clears auth user and profile data)
-              await signOut();
-              
-              // Clear the profile from the hook state
+              // Step 1: Clear profile data
+              console.log('Step 1: Clearing profile data...');
               await clearProfile();
               
-              console.log('Sign out completed, navigating to profile setup...');
+              // Step 2: Sign out from auth context
+              console.log('Step 2: Signing out from auth context...');
+              await signOut();
               
-              // Navigate to profile setup screen
+              // Step 3: Navigate to profile setup
+              console.log('Step 3: Navigating to profile setup...');
               router.replace('/(tabs)/profile-setup');
+              
+              console.log('✅ Sign out flow completed successfully');
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
             } catch (error) {
-              console.error('Error signing out:', error);
+              console.error('❌ Error during sign out:', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');
+            } finally {
+              setIsSigningOut(false);
             }
           },
         },
@@ -110,10 +120,13 @@ export default function ProfileScreen() {
 
           {user && (
             <TouchableOpacity
-              style={styles.signOutButton}
+              style={[styles.signOutButton, isSigningOut && styles.signOutButtonDisabled]}
               onPress={handleSignOut}
+              disabled={isSigningOut}
             >
-              <Text style={styles.signOutText}>Sign Out</Text>
+              <Text style={styles.signOutText}>
+                {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -299,11 +312,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.secondary,
+    borderColor: '#FF6B6B',
     alignItems: 'center',
   },
+  signOutButtonDisabled: {
+    opacity: 0.5,
+  },
   signOutText: {
-    color: colors.text,
+    color: '#FF6B6B',
     fontSize: 14,
     fontWeight: '600',
   },

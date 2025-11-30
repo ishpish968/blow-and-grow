@@ -213,12 +213,18 @@ export function useProfile() {
 
   const clearProfile = useCallback(async () => {
     try {
-      console.log('Clearing current profile...');
-      await AsyncStorage.removeItem(PROFILE_KEY);
+      console.log('🗑️  Clearing current profile from state and storage...');
+      
+      // First clear the state immediately
       setCurrentProfile(null);
-      console.log('Profile cleared successfully');
+      
+      // Then remove from AsyncStorage
+      await AsyncStorage.removeItem(PROFILE_KEY);
+      
+      console.log('✅ Profile cleared successfully');
     } catch (error) {
-      console.error('Error clearing profile:', error);
+      console.error('❌ Error clearing profile:', error);
+      throw error;
     }
   }, []);
 

@@ -59,21 +59,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      console.log('Signing out user...');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🚪 Starting sign out process...');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
-      // Remove auth user data
+      // First, clear the user state immediately
+      console.log('1️⃣  Clearing user state...');
+      setUser(null);
+      
+      // Then remove all auth-related data from AsyncStorage
+      console.log('2️⃣  Removing auth user data from AsyncStorage...');
       await AsyncStorage.removeItem(AUTH_USER_KEY);
       
-      // Remove profile data
+      console.log('3️⃣  Removing profile data from AsyncStorage...');
       await AsyncStorage.removeItem(PROFILE_KEY);
       
       // Optionally remove game state (uncomment if you want to reset game progress on sign out)
+      // console.log('4️⃣  Removing game state from AsyncStorage...');
       // await AsyncStorage.removeItem(GAME_STATE_KEY);
       
-      setUser(null);
-      console.log('User signed out successfully');
+      console.log('✅ Sign out completed successfully');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('❌ Error signing out:', error);
       throw error;
     }
   };
