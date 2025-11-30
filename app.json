@@ -1,8 +1,7 @@
-
 {
   "expo": {
-    "name": "Blow and Grow",
-    "slug": "blow-and-grow",
+    "name": "Verdant Valley",
+    "slug": "Verdant Valley",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -40,6 +39,7 @@
       "expo-apple-authentication"
     ],
     "scheme": "natively",
+    "owner": "anonymous",
     "experiments": {
       "typedRoutes": true
     },

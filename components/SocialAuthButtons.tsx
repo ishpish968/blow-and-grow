@@ -14,52 +14,98 @@ interface SocialAuthButtonsProps {
 }
 
 export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
-  const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
+  const { 
+    signInWithGoogle, 
+    isLoading: googleLoading, 
+    error: googleError,
+    isConfigured: googleConfigured,
+    redirectUri,
+    userInfo,
+  } = useGoogleAuth();
+  
   const { signInWithApple, isAvailable: appleAvailable, isLoading: appleLoading } = useAppleAuth();
   const { signIn } = useAuth();
   const { createProfile, allProfiles } = useProfile();
 
+  // Show user info when available
+  React.useEffect(() => {
+    if (userInfo) {
+      handleGoogleUserInfo(userInfo);
+    }
+  }, [userInfo]);
+
+  const handleGoogleUserInfo = async (userData: any) => {
+    try {
+      console.log('Processing Google user info:', userData);
+      
+      const authUser = {
+        id: `google_${userData.id}`,
+        email: userData.email,
+        name: userData.name,
+        provider: 'google' as const,
+        providerId: userData.id,
+      };
+
+      await signIn(authUser);
+
+      // Check if profile exists for this email
+      const existingProfile = allProfiles.find(p => p.id === authUser.id);
+
+      if (!existingProfile) {
+        // Create a new profile
+        await createProfile(userData.name || userData.email.split('@')[0]);
+      }
+
+      onSuccess?.();
+      router.replace('/(tabs)/(home)');
+    } catch (error) {
+      console.error('Error processing Google user info:', error);
+      Alert.alert('Error', 'Failed to complete sign in. Please try again.');
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     try {
-      const result = await signInWithGoogle();
+      console.log('Google sign-in button pressed');
       
-      if (result.success && result.params) {
-        // In a production app, you would fetch user info from Google's API
-        // For now, we'll create a mock user
-        Alert.alert(
-          'Google Sign-In',
-          'Google authentication is configured but requires OAuth credentials from Google Cloud Console. Please set up your OAuth client IDs in hooks/useGoogleAuth.ts',
-          [{ text: 'OK' }]
-        );
-        
-        // Mock user data for demonstration
-        const mockEmail = 'user@gmail.com';
-        const mockName = 'Google User';
-        
-        // Create auth user
-        const authUser = {
-          id: `google_${Date.now()}`,
-          email: mockEmail,
-          name: mockName,
-          provider: 'google' as const,
-          providerId: `google_${Date.now()}`,
-        };
-        
-        await signIn(authUser);
-        
-        // Check if profile exists for this email
-        const existingProfile = allProfiles.find(p => p.id === authUser.id);
-        
-        if (!existingProfile) {
-          // Create a new profile
-          await createProfile(mockName || mockEmail.split('@')[0]);
+      const result = await signInWithGoogle();
+
+      if (!result.success) {
+        if (result.cancelled) {
+          console.log('User cancelled sign-in');
+          return;
         }
-        
-        onSuccess?.();
-        router.replace('/(tabs)/(home)');
-      } else if (result.cancelled) {
-        console.log('Google sign-in cancelled');
+
+        if (result.setupInstructions) {
+          // Show setup instructions
+          Alert.alert(
+            'Google OAuth Setup Required',
+            'Google Sign-In needs to be configured. Please check the console logs for detailed setup instructions.\n\n' +
+            `Your redirect URI is:\n${redirectUri}\n\n` +
+            'Add this to your Google Cloud Console OAuth credentials.',
+            [
+              {
+                text: 'Copy Redirect URI',
+                onPress: () => {
+                  console.log('='.repeat(60));
+                  console.log('COPY THIS REDIRECT URI:');
+                  console.log(redirectUri);
+                  console.log('='.repeat(60));
+                  Alert.alert('Redirect URI', `Copied to console:\n${redirectUri}`);
+                },
+              },
+              { text: 'OK' },
+            ]
+          );
+          return;
+        }
+
+        if (result.errorMessage) {
+          Alert.alert('Sign In Failed', result.errorMessage);
+        }
       }
+      
+      // Success case is handled by the useEffect hook when userInfo is set
     } catch (error) {
       console.error('Google sign-in error:', error);
       Alert.alert('Error', 'Failed to sign in with Google. Please try again.');
@@ -69,10 +115,10 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
   const handleAppleSignIn = async () => {
     try {
       const result = await signInWithApple();
-      
+
       if (result.success && result.user) {
         const { id, email, name } = result.user;
-        
+
         // Create auth user
         const authUser = {
           id: `apple_${id}`,
@@ -81,18 +127,18 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
           provider: 'apple' as const,
           providerId: id,
         };
-        
+
         await signIn(authUser);
-        
+
         // Check if profile exists for this Apple ID
         const existingProfile = allProfiles.find(p => p.id === authUser.id);
-        
+
         if (!existingProfile) {
           // Create a new profile
           const username = name || email?.split('@')[0] || 'Apple User';
           await createProfile(username);
         }
-        
+
         onSuccess?.();
         router.replace('/(tabs)/(home)');
       } else if (result.cancelled) {
@@ -124,7 +170,10 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
         )}
 
         <TouchableOpacity
-          style={styles.googleButton}
+          style={[
+            styles.googleButton,
+            (googleLoading || !googleConfigured) && styles.googleButtonDisabled,
+          ]}
           onPress={handleGoogleSignIn}
           disabled={googleLoading}
         >
@@ -133,6 +182,21 @@ export function SocialAuthButtons({ onSuccess }: SocialAuthButtonsProps) {
             {googleLoading ? 'Signing in...' : 'Sign in with Google'}
           </Text>
         </TouchableOpacity>
+
+        {!googleConfigured && (
+          <View style={styles.warningBox}>
+            <Text style={styles.warningIcon}>⚠️</Text>
+            <Text style={styles.warningText}>
+              Google Sign-In requires setup. Tap the button above for instructions.
+            </Text>
+          </View>
+        )}
+
+        {googleError && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{googleError}</Text>
+          </View>
+        )}
       </View>
 
       <Text style={styles.disclaimer}>
@@ -181,6 +245,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 50,
   },
+  googleButtonDisabled: {
+    opacity: 0.6,
+  },
   googleIcon: {
     fontSize: 20,
     fontWeight: '700',
@@ -191,6 +258,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#3C4043',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3CD',
+    borderWidth: 1,
+    borderColor: '#FFE69C',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  warningIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#856404',
+    lineHeight: 18,
+  },
+  errorBox: {
+    backgroundColor: '#F8D7DA',
+    borderWidth: 1,
+    borderColor: '#F5C2C7',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#842029',
+    lineHeight: 18,
   },
   disclaimer: {
     fontSize: 12,
