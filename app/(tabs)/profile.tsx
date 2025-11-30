@@ -6,13 +6,16 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameState } from '@/hooks/useGameState';
 import { LeaderboardModal } from '@/components/LeaderboardModal';
+import { AvatarDisplay } from '@/components/AvatarDisplay';
+import { AvatarSelectionModal } from '@/components/AvatarSelectionModal';
 import { router } from 'expo-router';
 
 export default function ProfileScreen() {
-  const { currentProfile, getLeaderboard, clearProfile } = useProfile();
+  const { currentProfile, getLeaderboard, clearProfile, updateAvatar } = useProfile();
   const { user, signOut } = useAuth();
   const { gameState } = useGameState();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
@@ -57,6 +60,10 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleAvatarSelect = async (avatarId: string) => {
+    await updateAvatar(avatarId);
+  };
+
   if (!currentProfile) {
     return (
       <View style={styles.container}>
@@ -88,7 +95,10 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.avatar}>{currentProfile.avatar}</Text>
+          <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
+            <AvatarDisplay size={100} />
+            <Text style={styles.changeAvatarText}>Tap to change</Text>
+          </TouchableOpacity>
           <Text style={styles.username}>{currentProfile.username}</Text>
           {user && (
             <View style={styles.authInfo}>
@@ -225,6 +235,13 @@ export default function ProfileScreen() {
         profiles={getLeaderboard()}
         currentProfileId={currentProfile.id}
       />
+
+      <AvatarSelectionModal
+        visible={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+        onSelect={handleAvatarSelect}
+        currentAvatarId={currentProfile.avatar}
+      />
     </View>
   );
 }
@@ -246,14 +263,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  avatar: {
-    fontSize: 80,
-    marginBottom: 12,
+  changeAvatarText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
   },
   username: {
     fontSize: 28,
     fontWeight: '800',
     color: colors.text,
+    marginTop: 12,
     marginBottom: 4,
   },
   authInfo: {

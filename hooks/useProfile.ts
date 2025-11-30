@@ -72,14 +72,16 @@ export function useProfile() {
     }
   };
 
-  const createProfile = useCallback(async (username: string) => {
-    const randomAvatar = AVATAR_EMOJIS[Math.floor(Math.random() * AVATAR_EMOJIS.length)];
+  const createProfile = useCallback(async (username: string, avatarId?: string) => {
+    const avatar = avatarId || AVATAR_EMOJIS[Math.floor(Math.random() * AVATAR_EMOJIS.length)];
+    const avatarType = avatarId ? 'sprite' : 'emoji';
     
     const newProfile: UserProfile = {
       id: Date.now().toString(),
       username,
       createdAt: Date.now(),
-      avatar: randomAvatar,
+      avatar,
+      avatarType,
       stats: {
         totalPlantsGrown: 0,
         totalCoinsEarned: 0,
@@ -98,6 +100,19 @@ export function useProfile() {
     setCurrentProfile(newProfile);
     return newProfile;
   }, []);
+
+  const updateAvatar = useCallback(async (avatarId: string) => {
+    if (!currentProfile) return;
+
+    const updatedProfile: UserProfile = {
+      ...currentProfile,
+      avatar: avatarId,
+      avatarType: 'sprite',
+    };
+
+    await saveProfile(updatedProfile);
+    setCurrentProfile(updatedProfile);
+  }, [currentProfile]);
 
   const updateStats = useCallback(async (updates: Partial<ProfileStats>) => {
     if (!currentProfile) return;
@@ -241,6 +256,7 @@ export function useProfile() {
     allProfiles,
     isLoaded,
     createProfile,
+    updateAvatar,
     updateStats,
     switchProfile,
     deleteProfile,

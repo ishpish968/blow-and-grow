@@ -4,6 +4,7 @@ export interface UserProfile {
   username: string;
   createdAt: number;
   avatar: string;
+  avatarType: 'emoji' | 'sprite';
   stats: ProfileStats;
   achievements: Achievement[];
 }

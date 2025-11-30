@@ -6,9 +6,13 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
+import { AvatarDisplay } from '@/components/AvatarDisplay';
+import { AvatarSelectionModal } from '@/components/AvatarSelectionModal';
 
 export default function ProfileSetupScreen() {
   const [username, setUsername] = useState('');
+  const [selectedAvatarId, setSelectedAvatarId] = useState('girl_default');
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const { createProfile } = useProfile();
   const { signIn } = useAuth();
 
@@ -32,7 +36,7 @@ export default function ProfileSetupScreen() {
       };
       
       await signIn(authUser);
-      await createProfile(username.trim());
+      await createProfile(username.trim(), selectedAvatarId);
       router.replace('/(tabs)/(home)');
     } catch (error) {
       console.error('Error creating profile:', error);
@@ -54,6 +58,17 @@ export default function ProfileSetupScreen() {
           <Text style={styles.emoji}>🌱</Text>
           <Text style={styles.title}>Welcome to Blow and Grow!</Text>
           <Text style={styles.subtitle}>Create your gardener profile to start tracking your progress</Text>
+
+          <View style={styles.avatarSection}>
+            <Text style={styles.label}>Choose Your Avatar</Text>
+            <TouchableOpacity
+              style={styles.avatarButton}
+              onPress={() => setShowAvatarModal(true)}
+            >
+              <AvatarDisplay size={100} />
+              <Text style={styles.changeAvatarText}>Tap to change</Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Choose Your Username</Text>
@@ -89,6 +104,13 @@ export default function ProfileSetupScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <AvatarSelectionModal
+        visible={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+        onSelect={setSelectedAvatarId}
+        currentAvatarId={selectedAvatarId}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -127,6 +149,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 22,
+  },
+  avatarSection: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  avatarButton: {
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  changeAvatarText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
   },
   inputContainer: {
     width: '100%',

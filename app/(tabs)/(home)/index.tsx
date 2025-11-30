@@ -1,19 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { useGameState } from '@/hooks/useGameState';
-import { useProfile } from '@/hooks/useProfile';
 import { PlotCard } from '@/components/PlotCard';
-import { ActionButtons } from '@/components/ActionButtons';
 import { PlantSelectionModal } from '@/components/PlantSelectionModal';
 import { PetSelectionModal } from '@/components/PetSelectionModal';
-import { ActivePetDisplay } from '@/components/ActivePetDisplay';
 import { RarePlantDiscovery } from '@/components/RarePlantDiscovery';
 import { StatsHeader } from '@/components/StatsHeader';
-import { Plant } from '@/types/GameTypes';
+import { ActionButtons } from '@/components/ActionButtons';
+import { ActivePetDisplay } from '@/components/ActivePetDisplay';
+import { GardenCharacter } from '@/components/GardenCharacter';
+import { AvatarAction } from '@/types/AvatarTypes';
+import { PLANTS_DATA } from '@/data/plantsData';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
 
 export default function HomeScreen() {
   const {
@@ -29,76 +29,147 @@ export default function HomeScreen() {
     setActivePet,
     discoverRarePlant,
     getActivePet,
-    isLoaded,
   } = useGameState();
-
-  const { currentProfile, isLoaded: profileLoaded } = useProfile();
 
   const [showPlantModal, setShowPlantModal] = useState(false);
   const [showPetModal, setShowPetModal] = useState(false);
-  const [discoveredPlant, setDiscoveredPlant] = useState<Plant | null>(null);
+  const [discoveredPlant, setDiscoveredPlant] = useState<any>(null);
+  const [characterAction, setCharacterAction] = useState<AvatarAction>('idle');
 
+  const selectedPlotData = selectedPlot !== null ? gameState.plots[selectedPlot] : null;
   const activePet = getActivePet();
 
-  // Redirect to profile setup if no profile exists
-  useEffect(() => {
-    if (profileLoaded && !currentProfile) {
-      router.replace('/(tabs)/profile-setup');
-    }
-  }, [profileLoaded, currentProfile]);
-
-  useEffect(() => {
-    if (!activePet) return;
-
-    const interval = setInterval(() => {
-      const plant = discoverRarePlant();
-      if (plant) {
-        setDiscoveredPlant(plant);
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [activePet, discoverRarePlant]);
-
   const handlePlotPress = (plotId: number) => {
-    setSelectedPlot(plotId === selectedPlot ? null : plotId);
+    setSelectedPlot(plotId);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handlePlantSeed = () => {
+  const handlePlant = () => {
+    if (selectedPlot === null) {
+      Alert.alert('No Plot Selected', 'Please select an empty plot first');
+      return;
+    }
     setShowPlantModal(true);
   };
 
-  const handleSelectPlant = (plant: any) => {
-    if (selectedPlot !== null) {
-      plantSeed(selectedPlot, plant);
-      setShowPlantModal(false);
-    }
+  const handlePlantSelect = (plantId: string) => {
+    if (selectedPlot === null) return;
+
+    const plant = PLANTS_DATA.find((p) => p.id === plantId);
+    if (!plant) return;
+
+    plantSeed(selectedPlot, plant);
+    setShowPlantModal(false);
+    setCharacterAction('planting');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    setTimeout(() => {
+      setCharacterAction('idle');
+    }, 2000);
   };
 
-  const handleDiscoverPress = () => {
+  const handleWater = () => {
+    if (selectedPlot === null || !selectedPlotData) {
+      Alert.alert('No Plant Selected', 'Please select a planted plot first');
+      return;
+    }
+
+    if (selectedPlotData.stage === 'ready') {
+      Alert.alert('Plant Ready', 'This plant is ready to harvest!');
+      return;
+    }
+
+    waterPlant(selectedPlot);
+    setCharacterAction('watering');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const plant = discoverRarePlant();
-    if (plant) {
-      setDiscoveredPlant(plant);
-    } else {
-      console.log('No rare plant discovered this time');
+
+    setTimeout(() => {
+      setCharacterAction('idle');
+    }, 2000);
+  };
+
+  const handleRemoveWeeds = () => {
+    if (selectedPlot === null || !selectedPlotData) {
+      Alert.alert('No Plant Selected', 'Please select a planted plot first');
+      return;
+    }
+
+    if (!selectedPlotData.hasWeeds) {
+      Alert.alert('No Weeds', 'This plot has no weeds to remove');
+      return;
+    }
+
+    removeWeeds(selectedPlot);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleHarvest = () => {
+    if (selectedPlot === null || !selectedPlotData) {
+      Alert.alert('No Plant Selected', 'Please select a planted plot first');
+      return;
+    }
+
+    if (selectedPlotData.stage !== 'ready') {
+      Alert.alert('Not Ready', 'This plant is not ready to harvest yet');
+      return;
+    }
+
+    harvestPlant(selectedPlot);
+    setCharacterAction('harvesting');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    setTimeout(() => {
+      setCharacterAction('happy');
+      setTimeout(() => {
+        setCharacterAction('idle');
+      }, 1500);
+    }, 1000);
+
+    const rarePlant = discoverRarePlant();
+    if (rarePlant) {
+      setTimeout(() => {
+        setDiscoveredPlant(rarePlant);
+      }, 500);
     }
   };
 
-  const plotsUsed = gameState.plots.filter((p) => p !== null).length;
+  const handleUnlockPlant = (plantId: string) => {
+    const plant = PLANTS_DATA.find((p) => p.id === plantId);
+    if (!plant) return;
 
-  if (!isLoaded || !profileLoaded) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading your garden...</Text>
-      </View>
-    );
-  }
+    if (gameState.coins < plant.unlockCost) {
+      Alert.alert('Not Enough Coins', `You need ${plant.unlockCost} coins to unlock this plant`);
+      return;
+    }
 
-  if (!currentProfile) {
-    return null; // Will redirect in useEffect
-  }
+    unlockPlant(plantId);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Plant Unlocked!', `${plant.name} is now available to plant!`);
+  };
+
+  const handleUnlockPet = (petId: string) => {
+    const pet = gameState.pets.find((p) => p.id === petId);
+    if (!pet) return;
+
+    if (gameState.coins < pet.unlockCost) {
+      Alert.alert('Not Enough Coins', `You need ${pet.unlockCost} coins to unlock this pet`);
+      return;
+    }
+
+    unlockPet(petId);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Pet Unlocked!', `${pet.name} is now available!`);
+  };
+
+  const handleSetActivePet = (petId: string | null) => {
+    setActivePet(petId);
+    if (petId) {
+      const pet = gameState.pets.find((p) => p.id === petId);
+      if (pet) {
+        Alert.alert('Pet Activated!', `${pet.name} is now helping in your garden!`);
+      }
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -107,32 +178,11 @@ export default function HomeScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>🌱 Blow and Grow</Text>
-          <Text style={styles.subtitle}>Welcome back, {currentProfile.username}!</Text>
-          <Text style={styles.offlineText}>✨ Plants grow even when you&apos;re away!</Text>
-        </View>
+        <StatsHeader coins={gameState.coins} />
 
-        <StatsHeader
-          coins={gameState.coins}
-          plotsUsed={plotsUsed}
-          totalPlots={gameState.plots.length}
-        />
+        <GardenCharacter currentAction={characterAction} />
 
-        <ActivePetDisplay
-          pet={activePet}
-          onPress={() => setShowPetModal(true)}
-        />
-
-        {activePet && activePet.ability.type === 'rare_finder' && (
-          <TouchableOpacity
-            style={styles.discoverButton}
-            onPress={handleDiscoverPress}
-          >
-            <Text style={styles.discoverEmoji}>🔍</Text>
-            <Text style={styles.discoverText}>Search for Rare Plants</Text>
-          </TouchableOpacity>
-        )}
+        {activePet && <ActivePetDisplay pet={activePet} />}
 
         <View style={styles.gardenGrid}>
           {gameState.plots.map((plot, index) => (
@@ -147,41 +197,38 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {selectedPlot !== null && (
-          <View style={styles.actionsContainer}>
-            <ActionButtons
-              plot={gameState.plots[selectedPlot]}
-              onWater={() => waterPlant(selectedPlot)}
-              onRemoveWeeds={() => removeWeeds(selectedPlot)}
-              onHarvest={() => harvestPlant(selectedPlot)}
-              onPlant={handlePlantSeed}
-            />
-          </View>
-        )}
+        <ActionButtons
+          selectedPlot={selectedPlotData}
+          onPlant={handlePlant}
+          onWater={handleWater}
+          onRemoveWeeds={handleRemoveWeeds}
+          onHarvest={handleHarvest}
+        />
 
-        <View style={styles.instructions}>
-          <Text style={styles.instructionText}>
-            💡 Tap a plot to select it, then use the buttons to interact!
-          </Text>
-          <Text style={styles.instructionText}>
-            🐾 Select a pet companion to help you grow exotic plants!
-          </Text>
-          <Text style={styles.instructionText}>
-            ✨ Rare plants found: {gameState.rarePlantsFound}
-          </Text>
-          <Text style={styles.instructionText}>
-            🌱 Try to unlock the legendary Giant Beanstalk!
-          </Text>
+        <View style={styles.bottomButtons}>
+          <TouchableOpacity
+            style={styles.shopButton}
+            onPress={() => setShowPlantModal(true)}
+          >
+            <Text style={styles.shopButtonText}>🌱 Plant Shop</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.petButton}
+            onPress={() => setShowPetModal(true)}
+          >
+            <Text style={styles.petButtonText}>🐾 Pet Shop</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
       <PlantSelectionModal
         visible={showPlantModal}
         onClose={() => setShowPlantModal(false)}
-        onSelectPlant={handleSelectPlant}
+        onSelectPlant={handlePlantSelect}
+        onUnlockPlant={handleUnlockPlant}
         unlockedPlants={gameState.unlockedPlants}
-        coins={gameState.coins}
-        onUnlockPlant={unlockPlant}
+        currentCoins={gameState.coins}
       />
 
       <PetSelectionModal
@@ -189,15 +236,17 @@ export default function HomeScreen() {
         onClose={() => setShowPetModal(false)}
         pets={gameState.pets}
         activePetId={gameState.activePet}
-        coins={gameState.coins}
-        onUnlockPet={unlockPet}
-        onSelectPet={setActivePet}
+        currentCoins={gameState.coins}
+        onUnlockPet={handleUnlockPet}
+        onSetActivePet={handleSetActivePet}
       />
 
-      <RarePlantDiscovery
-        plant={discoveredPlant}
-        onClose={() => setDiscoveredPlant(null)}
-      />
+      {discoveredPlant && (
+        <RarePlantDiscovery
+          plant={discoveredPlant}
+          onClose={() => setDiscoveredPlant(null)}
+        />
+      )}
     </View>
   );
 }
@@ -207,95 +256,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '600',
-  },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
     paddingTop: 48,
-    paddingBottom: 120,
-  },
-  header: {
-    alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  offlineText: {
-    fontSize: 14,
-    color: colors.highlight,
-    textAlign: 'center',
-    marginTop: 4,
-    fontWeight: '600',
+    paddingBottom: 140,
   },
   gardenGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    marginTop: 16,
-  },
-  plotWrapper: {
-    width: '45%',
-  },
-  actionsContainer: {
-    marginTop: 16,
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
-  discoverButton: {
+  plotWrapper: {
+    width: '48%',
+    marginBottom: 8,
+  },
+  bottomButtons: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.highlight,
-    marginHorizontal: 16,
-    marginVertical: 8,
+    gap: 12,
+    marginTop: 16,
+  },
+  shopButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
+    alignItems: 'center',
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
   },
-  discoverEmoji: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  discoverText: {
+  shopButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  instructions: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    marginHorizontal: 16,
-    marginTop: 16,
-    backgroundColor: colors.accent,
+  petButton: {
+    flex: 1,
+    backgroundColor: colors.highlight,
+    paddingVertical: 14,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.secondary,
+    alignItems: 'center',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
   },
-  instructionText: {
-    fontSize: 14,
-    color: colors.text,
-    marginBottom: 8,
-    lineHeight: 20,
+  petButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
